@@ -1,0 +1,15 @@
+Module path:  Environments.RecommenderSystem.Recommender_py_wo_actionspace_matrix Recommender_py_wo_actionspace_matrix
+Dynamically loaded from:  <class 'Environments.RecommenderSystem.Recommender_py_wo_actionspace_matrix.Recommender_py_wo_actionspace_matrix'>
+Module path:  Src.RL_Algorithms.QAC_C2DMapping QAC_C2DMapping
+Dynamically loaded from:  <class 'Src.RL_Algorithms.QAC_C2DMapping.QAC_C2DMapping'>
+=====Configurations=====
+ Namespace(a_clip=1, acceptanceCooling=0.225, actionLiteral=1, actor_lr=0.001, actor_scaling_factor_mean=1, algo_name='QAC_C2DMapping', batch_size=1, buffer_size=100, clipped_decimals=0, collision_rewards=0, commonOrderCosts=75, constraint='hard', cooling=0.25, critic_lr=0.01, debug=True, deepActionRep=True, deepActor=True, emb_lambda=0.9, emb_reg=1e-05, embed_lr=0.0001, env_name='Recommender_py', experiment='run', folder_suffix='default', fourier_coupled=False, fourier_order=3, gamma=0.999, gauss_variance=0.5, hiddenActorLayerSize=128, hiddenLayerSize=128, initialAcceptance=0.9, initial_phase_epochs=4, knns=100, load_embed=False, log_output='term_file', mapping='dnc_mapping', max_episodes=100, max_steps=100, maximum_greedy_search_steps=1, n_actions=23, no_neighbours=0, only_phase_one=False, optim='sgd', perturb_scaler=1, perturbation_range=5, reduced_action_dim=23, save_count=10, save_model=True, seed=1, state_lr=0.001, sup_batch_size=64, timestamp='5|23|9:58:15', true_embeddings=False, wall=True)
+Actions space: 1639 :: State space: 23
+State Low: tensor([0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]) :: State High: tensor([1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1.,
+        1., 1., 1., 1., 1.])
+State features:  [('dummy_param', torch.Size([1]))]
+Critic:  [('fc1.weight', torch.Size([128, 69])), ('fc1.bias', torch.Size([128])), ('fc2.weight', torch.Size([128, 151])), ('fc2.bias', torch.Size([128])), ('fc3.weight', torch.Size([1, 128])), ('fc3.bias', torch.Size([1]))]
+Actor:  [('fc1.weight', torch.Size([128, 69])), ('fc1.bias', torch.Size([128])), ('fc2.weight', torch.Size([128, 128])), ('fc2.bias', torch.Size([128])), ('fc3.weight', torch.Size([23, 128])), ('fc3.bias', torch.Size([23]))]
+Episode 0 / current actor loss: 0.6427357482910157
+Episode 0 / current critic loss: 0.043486590385437014
+time required for 10 :0.38814759254455566
