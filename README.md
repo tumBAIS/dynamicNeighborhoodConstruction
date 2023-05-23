@@ -45,12 +45,9 @@ On the first level you can see a parser.py, wherein we set hyperparameters and e
 ## To the make the code work
 
  * Create a local python environment by subsequently executing the following commands in the root folder
- `python3 -m venv venv`
- 
+`python3 -m venv venv` 
 `source venv/bin/activate`
-
 `python -m pip install -r requirements.txt`
-
 `deactivate`
 
  * `Src/parser.py` Set your study's hyperparameters in this file, e.g., which environment to use or setting learning rates
@@ -58,6 +55,8 @@ On the first level you can see a parser.py, wherein we set hyperparameters and e
  * `run.py` Execute this file using the command line `python3 run.py`.
  
  * Note that you might have to adapt your root folder's name to `dynamicNeighborhoodConstruction`
+ 
+ * Note that the current hyperparameters are set such that a fast dummy training loop is executed on the Maze environment using the DNC mapping  
  
 
 ## Acknowledgements

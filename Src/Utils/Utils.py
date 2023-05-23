@@ -223,7 +223,7 @@ def dynamic_load(dir, name, load_class=False):
 
         if len(abs_path) == 0:
             abs_path = search(dir, name).split('\\')[1:]
-        pos = abs_path.index('dnc_final_code')
+        pos = abs_path.index('dynamicNeighborhoodConstruction')
 
         module_path = '.'.join([str(item) for item in abs_path[pos + 1:]])
         print("Module path: ", module_path, name)

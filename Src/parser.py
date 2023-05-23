@@ -54,8 +54,8 @@ class Parser(object):
 
     def environment_parameters(self, parser):
         parser.add_argument("--algo_name", default='QAC_C2DMapping', help="RL algorithm")
-        parser.add_argument("--env_name", default='Recommender_py', help="Environment to run the code", choices=["Gridworld_py","Recommender_py","JointReplenishment_py"])
-        parser.add_argument("--n_actions", default=23, help="size of the action vector", type=int)
+        parser.add_argument("--env_name", default='Gridworld_py', help="Environment to run the code", choices=["Gridworld_py","Recommender_py","JointReplenishment_py"])
+        parser.add_argument("--n_actions", default=12, help="size of the action vector", type=int)
         parser.add_argument("--max_episodes", default=int(100), help="maximum number of episodes", type=int)
         parser.add_argument("--max_steps", default=100, help="maximum steps per episode", type=int)
 
