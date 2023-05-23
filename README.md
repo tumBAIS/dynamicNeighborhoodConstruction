@@ -32,9 +32,9 @@ On the first level you can see a parser.py, wherein we set hyperparameters and e
 * Agent.py: Groups several high-level RL agent functionalities to allow for further RL pipelines like the one in QAC_C2DMapping.py
 
 `Utils`: 
-* Policy.py and Critic.py: Contain the neural network architectures for actor and critic respectively.
+* Actor.py and Critic.py: Contain the neural network architectures for actor and critic respectively.
 * Basis.py: Contains the state representation module.
-* utils.py: Contains several helper functions such as plotting
+* Utils.py: Contains several helper functions such as plotting
 
 ### Environments
 * `ToyMaze`: Contains the implementation of the maze environment and bases on the work from Chandak et al. (2019).
@@ -53,7 +53,7 @@ On the first level you can see a parser.py, wherein we set hyperparameters and e
  
  * `run.py` Execute this file using the command line `python3 run.py`.
  
- * Note that you might have to adapt your root folder's name to `DNC`
+ * Note that you might have to adapt your root folder's name to `dynamicNeighborhoodConstruction`
  
 
 ## Acknowledgements
