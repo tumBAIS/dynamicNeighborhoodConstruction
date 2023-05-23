@@ -78,4 +78,3 @@ Timothy Mann, Theophane Weber, Thomas Degris, and Ben Coppin. Deep reinforcement
 discrete action spaces. arXiv preprint arXiv:1512.07679, 2015.
 
 Nathalie Vanvuchelen, Bram J. De Moor, and Robert N. Boute, The Use of Continuous Action Representations to Scale Deep Reinforcement Learning for Inventory Control. http://dx.doi.org/10.2139/ssrn.4253600 
-# dynamicNeighborhoodConstruction
