@@ -25,7 +25,7 @@ class Parser(object):
         parser.add_argument("--experiment", default='run', help="Name of the experiment")
 
         # Which mapping to use
-        parser.add_argument("--mapping",default="dnc_mapping",help = "Type of mapping function", choices= ["no_mapping","knn_mapping","minmax_mapping","dnc_mapping","learned_mapping"])
+        parser.add_argument("--mapping",default="dnc_mapping",help = "Type of mapping function", choices= ["no_mapping","knn_mapping","dnc_mapping","learned_mapping"]) # minmax achieved by using dnc_mapping and setting --cooling = 0 below
 
         self.environment_parameters(parser)  # Environment parameters
 
@@ -57,7 +57,7 @@ class Parser(object):
         parser.add_argument("--env_name", default='Gridworld_py', help="Environment to run the code", choices=["Gridworld_py","Recommender_py","JointReplenishment_py"])
         parser.add_argument("--n_actions", default=12, help="size of the action vector", type=int)
         parser.add_argument("--max_episodes", default=int(100), help="maximum number of episodes", type=int)
-        parser.add_argument("--max_steps", default=100, help="maximum steps per episode", type=int)
+        parser.add_argument("--max_steps", default=150, help="maximum steps per episode", type=int)
 
         # Gridworld specific arguments
         parser.add_argument("--wall", default=True, help="With wall", type=self.str2bool)
@@ -65,6 +65,8 @@ class Parser(object):
         parser.add_argument("--constraint", default='hard', help="type of constraint")
 
         # Joint replenishment specific
+        parser.add_argument("--smin", default=0, help="minimum order level", type=int)
+        parser.add_argument("--smax", default=66, help="max order level", type=int)
         parser.add_argument("--commonOrderCosts", default=75, help="common order costs for the inventory env", type=int)
         parser.add_argument("--actionLiteral", default=1, help="mapping return literal action instead of label", type=int)
 
@@ -75,7 +77,7 @@ class Parser(object):
         parser.add_argument("--emb_lambda", default=0.9, help="Lagrangian for learning embedding on the fly", type=float)
         parser.add_argument("--embed_lr", default=1e-4, help="Learning rate of action embeddings", type=float)
         parser.add_argument("--emb_reg", default=1e-5, help="L2 regularization for embeddings", type=float)
-        parser.add_argument("--reduced_action_dim",default=23, help="dimensions of action embeddings", type=int)
+        parser.add_argument("--reduced_action_dim",default=2, help="dimensions of action embeddings", type=int)
         parser.add_argument("--load_embed", default=False, type=self.str2bool, help="Retrain flag")
         parser.add_argument("--deepActionRep", default=True, help="use deep NN for learning action reps or not",type=self.str2bool)
         parser.add_argument("--sup_batch_size", default=64, help="(64)Supervised learning Batch size", type=int)
@@ -83,7 +85,7 @@ class Parser(object):
 
     def KNN_parameters(self,parser):
         # KNN specific
-        parser.add_argument("--knns", default=100, type=int,help="No. of k nearest neighbours for knn mapping")  # knn-1,knn-2,knn-0.5%
+        parser.add_argument("--knns", default=2, type=int,help="No. of k nearest neighbours for knn mapping")  # knn-1,knn-2,knn-0.5%
 
     # DNC and MinMax specific params, MinMax obtained by setting
     def DNC_parameters(self,parser):
@@ -104,18 +106,18 @@ class Parser(object):
 
     def QAC_parameters(self, parser):
         parser.add_argument("--gamma", default=0.999, help="Discounting factor", type=float)
-        parser.add_argument("--actor_lr", default=1e-3, help="(1e-3) Learning rate of actor", type=float)
-        parser.add_argument("--critic_lr", default=1e-2, help="(1e-3) Learning rate of critic/baseline", type=float)
+        parser.add_argument("--actor_lr", default=1e-2, help="(1e-2) Learning rate of actor", type=float)
+        parser.add_argument("--critic_lr", default=1e-2, help="(1e-2) Learning rate of critic/baseline", type=float)
         parser.add_argument("--state_lr", default=1e-3, help="Learning rate of state features", type=float)
         parser.add_argument("--gauss_variance", default=0.5, help="Variance for gaussian policy", type=float) # 1 original setting
 
-        parser.add_argument("--hiddenLayerSize", default=128, help="size of hiddenlayer", type=int)
+        parser.add_argument("--hiddenLayerSize", default=32, help="size of hiddenlayer", type=int)
         parser.add_argument("--hiddenActorLayerSize", default=128, help="size of hiddenlayer", type=int)
-        parser.add_argument("--deepActor", default=True, help="if we want a deep actor", type=self.str2bool)
+        parser.add_argument("--deepActor", default=False, help="if we want a deep actor", type=self.str2bool)
 
         parser.add_argument("--actor_scaling_factor_mean", default=1, help="scale output of actor mean by x", type=float)
 
-        parser.add_argument("--fourier_coupled", default=False, help="Coupled or uncoupled fourier basis", type=self.str2bool)
+        parser.add_argument("--fourier_coupled", default=True, help="Coupled or uncoupled fourier basis", type=self.str2bool)
         parser.add_argument("--fourier_order", default=3, help="Order of fourier basis, " + "(if > 0, it overrides neural nets)", type=int)
 
         parser.add_argument("--buffer_size", default=int(100), help="Size of memory buffer (6e5)", type=int)
