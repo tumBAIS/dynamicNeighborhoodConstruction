@@ -24,7 +24,7 @@ On the first level you can see a parser.py, wherein we set hyperparameters and e
 `MappingFunctions`: Contains DNC.py, the main contribution of this project and the benchmarks we compare it against: 
 * knn.py: k-nearest neighbor (knn)
 * ActionRepresentation.py: Learned Action Representations (LAR)
-* MinMax is obtained by setting k=0 in DNC.py
+* MinMax is obtained by setting --cooling to 0 in the parser file
 
 
 `RL_Algorithms`: 
@@ -57,9 +57,8 @@ On the first level you can see a parser.py, wherein we set hyperparameters and e
  * Note that you might have to adapt your root folder's name to `dynamicNeighborhoodConstruction`
  
  * Note that the current hyperparameters are set such that a fast dummy training loop is executed on the Maze environment using the DNC mapping  
-
- * Note that knn and LAR rely on the initialization of an action space matrix or embedding vector, which will result in OOM-errors when the action space is too large, depending on the internal memory of the PC
  
+ * Note that knn and LAR rely on the initialization of an action space matrix or embedding vector, which will result in OOM-errors when the action space is too large, depending on the internal memory of the PC
 
 ## Acknowledgements
 We would like to thank Yash Chandak for sharing his code and for answering our questions considering the learned action representation (LAR) method (Chandak et al. (2019)). Our code meaningfully builds upon and extends his codebase.
@@ -80,3 +79,4 @@ Timothy Mann, Theophane Weber, Thomas Degris, and Ben Coppin. Deep reinforcement
 discrete action spaces. arXiv preprint arXiv:1512.07679, 2015.
 
 Nathalie Vanvuchelen, Bram J. De Moor, and Robert N. Boute, The Use of Continuous Action Representations to Scale Deep Reinforcement Learning for Inventory Control. http://dx.doi.org/10.2139/ssrn.4253600 
+# dynamicNeighborhoodConstruction
