@@ -57,6 +57,8 @@ On the first level you can see a parser.py, wherein we set hyperparameters and e
  * Note that you might have to adapt your root folder's name to `dynamicNeighborhoodConstruction`
  
  * Note that the current hyperparameters are set such that a fast dummy training loop is executed on the Maze environment using the DNC mapping  
+
+ * Note that knn and LAR rely on the initialization of an action space matrix or embedding vector, which will result in OOM-errors when the action space is too large, depending on the internal memory of the PC
  
 
 ## Acknowledgements
