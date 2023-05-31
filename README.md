@@ -12,7 +12,7 @@ The code is written in Python 3.8. We use PyTorch 1.13.1 to model neural network
 The repository contains the following folders:
 
 Src<br>		|-------Algorithms<br>     	  |-------Utils<br>
-Environments <br>	|-------InventoryControl<br>     |-------RecommenderSystem<br>	|-------SystemToyMaze<br>
+Environments <br>	|-------InventoryControl<br>     |-------RecommenderSystem<br>	|-------ToyMaze<br>
 
 
 On the first level you can see run.py which implements the overall policy training and evaluation loop.
@@ -58,9 +58,10 @@ On the first level you can see a parser.py, wherein we set hyperparameters and e
  
  * Note that the current hyperparameters are set such that a fast dummy training loop is executed on the Maze environment using the DNC mapping  
  
+ * Note that knn and LAR rely on the initialization of an action space matrix or embedding vector, which will result in OOM-errors when the action space is too large, depending on the internal memory of the PC
 
 ## Acknowledgements
-We would like to thank Yash Chandak for sharing his code and for answering our questions considering the learned action representation (LAR) method (Chandak et al. (2019)). Our code meaningfully builds upon and extends his codebase.
+We would like to thank Yash Chandak for sharing his code and for answering our questions considering the learned action representation (LAR) method (Chandak et al. (2019)). Our code for the LAR benchmark meaningfully builds upon and extends his codebase.
 
 ## License
 * [MIT license](https://opensource.org/license/mit/)
@@ -78,4 +79,3 @@ Timothy Mann, Theophane Weber, Thomas Degris, and Ben Coppin. Deep reinforcement
 discrete action spaces. arXiv preprint arXiv:1512.07679, 2015.
 
 Nathalie Vanvuchelen, Bram J. De Moor, and Robert N. Boute, The Use of Continuous Action Representations to Scale Deep Reinforcement Learning for Inventory Control. http://dx.doi.org/10.2139/ssrn.4253600 
-# dynamicNeighborhoodConstruction
