@@ -61,7 +61,7 @@ On the first level you can see a parser.py, wherein we set hyperparameters and e
  * Note that knn and LAR rely on the initialization of an action space matrix or embedding vector, which will result in OOM-errors when the action space is too large, depending on the internal memory of the PC
 
 ## Acknowledgements
-We would like to thank Yash Chandak for sharing his code and for answering our questions considering the learned action representation (LAR) method (Chandak et al. (2019)). Our code meaningfully builds upon and extends his codebase.
+We would like to thank Yash Chandak for sharing his code and for answering our questions considering the learned action representation (LAR) method (Chandak et al. (2019)). Our code for the LAR benchmark meaningfully builds upon and extends his codebase.
 
 ## License
 * [MIT license](https://opensource.org/license/mit/)
