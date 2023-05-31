@@ -24,7 +24,7 @@ On the first level you can see a parser.py, wherein we set hyperparameters and e
 `MappingFunctions`: Contains DNC.py, the main contribution of this project and the benchmarks we compare it against: 
 * knn.py: k-nearest neighbor (knn)
 * ActionRepresentation.py: Learned Action Representations (LAR)
-* MinMax is obtained by setting --cooling to 0 in the parser file
+* MinMax is obtained by setting --maximum_greedy_search_steps to 0 in the parser file
 
 
 `RL_Algorithms`: 

@@ -9,7 +9,7 @@ import random
 from collections import deque
 import itertools
 import matplotlib.pyplot as plt
-from os import path, mkdir, listdir, fsync
+from os import path, mkdir, listdir, fsync, name
 import importlib
 from time import time
 import sys
@@ -248,9 +248,14 @@ def check_n_create(dir_path, overwrite=False):
         print("\n ##### Warning File Exists... perhaps multi-threading error? \n")
 
 def create_directory_tree(dir_path):
-    dir_path = str.split(dir_path, sep='/')[1:-1]  #Ignore the blank characters in the start and end of string
-    for i in range(len(dir_path)):
-        check_n_create(path.join('/', *(dir_path[:i + 1])))
+    if name == 'nt':#windows
+        dir_path = str.split(dir_path, sep='\\')[1:-1]  #Ignore the blank characters in the start and end of string
+        for i in range(len(dir_path)):
+            check_n_create(path.join('\\', *(dir_path[:i + 1])))
+    else:#linux/mac
+        dir_path = str.split(dir_path, sep='/')[1:-1]  #Ignore the blank characters in the start and end of string
+        for i in range(len(dir_path)):
+            check_n_create(path.join('/', *(dir_path[:i + 1])))
 
 
 def remove_directory(dir_path):

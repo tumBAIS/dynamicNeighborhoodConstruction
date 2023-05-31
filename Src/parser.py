@@ -95,12 +95,12 @@ class Parser(object):
         # Neighborhood exploration method, only a_clip and
         parser.add_argument("--a_clip",default=1, help="clipping for minmax", type=float)
         parser.add_argument("--clipped_decimals", default=0, type=int,help="How to clip protoactions for dnc and minmax")
-        parser.add_argument("--maximum_greedy_search_steps", default=1, type=int,help="amplitude of perturbation")
+        parser.add_argument("--maximum_greedy_search_steps", default=0, type=int,help="amplitude of perturbation")
         parser.add_argument("--perturb_scaler", default=1, type=float,help="decimals with which we perturb")
         parser.add_argument("--perturbation_range", default=5, type=int, help="decimals with which we perturb")
 
         # Sim Annealing
-        parser.add_argument("--cooling",default=0.25,type=float,help="the speed of cooling for neighborhood construct. mapping")
+        parser.add_argument("--cooling",default=0,type=float,help="the speed of cooling for neighborhood construct. mapping")
         parser.add_argument("--initialAcceptance", default=0.9, type=float,help="the speed of cooling for neighborhood construct. mapping")
         parser.add_argument("--acceptanceCooling", default=0.225, type=float,help="the speed of cooling for neighborhood construct. mapping")
 

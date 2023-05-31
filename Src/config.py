@@ -1,10 +1,11 @@
 import sys
 from yaml import dump
-from os import path
+from os import path, name
 import Src.Utils.Utils as Utils
 import numpy as np
 import torch
 from collections import OrderedDict
+from pathlib import Path
 
 class Config(object):
     def __init__(self, args):
@@ -30,9 +31,13 @@ class Config(object):
         self.paths['experiment'] = path.join(self.paths['Experiments'], args.env_name, args.algo_name, folder_suffix)
 
         path_prefix = [self.paths['experiment'], str(args.seed)]
-        self.paths['logs'] = path.join(*path_prefix, 'Logs/')
-        self.paths['checkpoint'] = path.join(*path_prefix, 'Checkpoints/')
-        self.paths['results'] = path.join(*path_prefix, 'Results/')
+        if name == 'nt':
+            suffix = '\\'
+        else:
+            suffix = '/'
+        self.paths['logs'] = path.join(*path_prefix, 'Logs'+suffix)
+        self.paths['checkpoint'] = path.join(*path_prefix, 'Checkpoints'+suffix)
+        self.paths['results'] = path.join(*path_prefix, 'Results'+suffix)
 
         # Create directories
         for (key, val) in self.paths.items():
