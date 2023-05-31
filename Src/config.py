@@ -5,7 +5,6 @@ import Src.Utils.Utils as Utils
 import numpy as np
 import torch
 from collections import OrderedDict
-from pathlib import Path
 
 class Config(object):
     def __init__(self, args):
