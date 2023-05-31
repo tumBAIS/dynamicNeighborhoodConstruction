@@ -12,7 +12,7 @@ The code is written in Python 3.8. We use PyTorch 1.13.1 to model neural network
 The repository contains the following folders:
 
 Src<br>		|-------Algorithms<br>     	  |-------Utils<br>
-Environments <br>	|-------InventoryControl<br>     |-------RecommenderSystem<br>	|-------SystemToyMaze<br>
+Environments <br>	|-------InventoryControl<br>     |-------RecommenderSystem<br>	|-------ToyMaze<br>
 
 
 On the first level you can see run.py which implements the overall policy training and evaluation loop.
