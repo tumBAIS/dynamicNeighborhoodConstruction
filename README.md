@@ -5,7 +5,7 @@ This project contains code for the paper titled "Handling Large Discrete Action 
 
 ## Environment
 
-The code is written in Python 3.8. We use PyTorch 1.13.1 to model neural network architectures. A requirements.txt details further requirements of our project. We tested our project on Ubuntu 20.04, a Windows 11 environment, and a high-performance cluster, whose details you find here: https://doku.lrz.de/linux-cluster-10333236.html.
+The code is written in Python 3.8. We use PyTorch 1.13.1 to model neural network architectures. A requirements.txt details further requirements of our project. We tested our project on Ubuntu 20.04, a Windows 11 environment, and a high-performance cluster, whose details you find here: https://doku.lrz.de/linux-cluster-10333236.html
 
 
 ## Folder Structure
