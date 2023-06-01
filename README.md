@@ -1,6 +1,6 @@
 # Handling Large Discrete Action Spaces via Dynamic Neighborhood Construction
 
-This project contains code for the paper titled "Handling Large Discrete Action Spaces via Dynamic Neighborhood Construction"
+This project contains code for the paper titled "Handling Large Discrete Action Spaces via Dynamic Neighborhood Construction", see: https://arxiv.org/abs/2305.19891
 
 
 ## Environment
