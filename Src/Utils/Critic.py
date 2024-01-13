@@ -40,5 +40,23 @@ class Qval(Base_Critic):
         out = self.fc2(combined)
         out = self.relu(out)
         out = self.fc3(out)
+        # out = self.relu(out)
         return out
+
+class Qval_sequential(Base_Critic):
+    def __init__(self, state_dim, action_dim, config):
+        super(Qval_sequential, self).__init__(state_dim, config)
+        self.nn_model = nn.Sequential(
+            nn.Linear(state_dim+action_dim, self.config.hiddenLayerSize, bias=True),
+            nn.ReLU(),
+            nn.Linear(self.config.hiddenLayerSize, self.config.hiddenLayerSize, bias=True),
+            nn.ReLU(),
+            nn.Linear(self.config.hiddenLayerSize, 1, bias=True)
+            # nn.ReLU()
+        )
+        self.hiddenLayerSize =  self.config.hiddenLayerSize
+        self.init()
+    def forward(self,x,y):
+        nn_input = torch.cat([x, y], 1)
+        return self.nn_model.forward(nn_input)
 

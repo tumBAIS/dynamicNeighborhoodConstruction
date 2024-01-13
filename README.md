@@ -1,45 +1,51 @@
-# Handling Large Discrete Action Spaces via Dynamic Neighborhood Construction
+# Dynamic Neighborhood Construction for Structured Large Discrete Action Spaces
 
-This project contains code for the paper titled "Handling Large Discrete Action Spaces via Dynamic Neighborhood Construction", see: https://arxiv.org/abs/2305.19891
+This project contains code for the paper titled "Dynamic Neighborhood Construction for Structured Large Discrete Action Spaces" by Fabian Akkerman, Julius Luy, Wouter van Heeswijk, and Maximilian Schiffer, see: https://arxiv.org/abs/2305.19891.
 
 
 ## Environment
 
-The code is written in Python 3.8. We use PyTorch 1.13.1 to model neural network architectures. A requirements.txt details further requirements of our project. We tested our project on Ubuntu 20.04, a Windows 11 environment, and a high-performance cluster, whose details you find here: https://doku.lrz.de/linux-cluster-10333236.html
-
+The code is written in Python 3.8. We use PyTorch 1.13.1 to model neural network architectures and Gurobi 10.0.2 for solving mixed integer problems (MIP). A requirements.txt details further requirements of our project. We tested our project on Ubuntu 20.04, a Windows 11 environment, and a high-performance cluster.
 
 ## Folder Structure
 The repository contains the following folders:
 
-Src<br>		|-------Algorithms<br>     	  |-------Utils<br>
-Environments <br>	|-------InventoryControl<br>     |-------RecommenderSystem<br>	|-------ToyMaze<br>
+- **`Src/`**: All source code.
+  - **`MappingFunctions/`**: Contains all mapping functions.
+  - **`RL_Algorithms/`**: Contains RL implementations.
+  - **`Utils/`**: Contains utility functions, such as savings and loading data.
+- **`Environments/`**: Contains the studied environments.
 
 
-On the first level you can see run.py which implements the overall policy training and evaluation loop.
+On the first level you can see `run.py` which implements the overall policy training and evaluation loop.
 
 ### Src 
 
-On the first level you can see a parser.py, wherein we set hyperparameters and environment variables, and config.py, which preprocesses inputs.
+On the first level you can see a `parser.py`, wherein we set hyperparameters and environment variables, and `config.py`, which preprocesses inputs.
 
-`MappingFunctions`: Contains DNC.py, the main contribution of this project and the benchmarks we compare it against: 
-* knn.py: k-nearest neighbor (knn)
-* ActionRepresentation.py: Learned Action Representations (LAR)
-* MinMax is obtained by setting --maximum_greedy_search_steps to 0 in the parser file
+`MappingFunctions`: Contains ``DNC.py``, the main contribution of this project and the benchmarks we compare it against: 
+* ``knn.py``: k-nearest neighbor (knn)
+* ``ActionRepresentation.py``: Learned Action Representations (LAR)
+* MinMax is obtained by setting ``--SA_search_steps`` to ``0`` in the parser file
+* DNC w/o SA is obtained by setting ``--mapping=dnc_mapping`` and ``--neighbor_picking=greedy``
+* Solving the MIP during training + testing is obtained by setting ``--mapping=dnc_mapping`` and -``-neighborhood_query=math_programming``
+* Solving the MIP only during testing and using DNC during training is obtained by setting ``--mapping=dnc_mapping`` and ``--neighborhood_query=hybrid``
 
 
 `RL_Algorithms`: 
-* QAC_C2DMapping.py: Gathers the main RL functionalities required for a Q-actor-critic (QAC) algorithm (e.g., actor and critic updates) and integrate the continuous-to-discrete (C2D) mappings. 
-* Agent.py: Groups several high-level RL agent functionalities to allow for further RL pipelines like the one in QAC_C2DMapping.py
+* ``QAC_C2DMapping.py``: Gathers the main RL functionalities required for a Q-actor-critic (QAC) algorithm (e.g., actor and critic updates) and integrate the continuous-to-discrete (C2D) mappings. 
+* ``Agent.py``: Groups several high-level RL agent functionalities to allow for further RL pipelines like the one in QAC_C2DMapping.py
 
 `Utils`: 
-* Actor.py and Critic.py: Contain the neural network architectures for actor and critic respectively.
-* Basis.py: Contains the state representation module.
-* Utils.py: Contains several helper functions such as plotting
+* ``Actor.py`` and ``Critic.py``: Contain the neural network architectures for actor and critic respectively.
+* ``Basis.py``: Contains the state representation module.
+* ``Utils.py``: Contains several helper functions such as plotting
+* ``MathProg.py``: Contains the implementation of a MIP representing the Q-value network.
 
 ### Environments
-* `ToyMaze`: Contains the implementation of the maze environment and bases on the work from Chandak et al. (2019).
-* `Recommender`: Contains the implementation of the recommender environment similar to Dulac et al. (2015). Here, we also include the movies.csv from https://grouplens.org/datasets/movielens/25m/ and the script (preprocessing.py) we used to generate a tf-idf matrix.
-* `JointInventoryReplenishment`: Contains the implementation of the joint inventory replenishment problem similar to Vanvuchelen et al. (2022).
+* `ToyMaze`: Contains the implementation of the maze environment and bases on the work from Chandak et al. (2019). Moreover, it contains the variation of the maze environment with teleporting tiles as introduced in this work.
+* ``JobShop``: Contains the implementation of the jobshop scheduling environment.
+* `InventoryControl`: Contains the implementation of the joint inventory replenishment problem similar to Vanvuchelen et al. (2022).
 
 
 ## To the make the code work
@@ -65,7 +71,8 @@ We would like to thank Yash Chandak for sharing his code and for answering our q
 
 ## License
 * [MIT license](https://opensource.org/license/mit/)
-* Copyright 2023 © Fabian Akkerman, Julius Luy, Wouter van Heeswijk, and Maximilian Schiffer
+* Copyright 2024 © Fabian Akkerman, Julius Luy, Wouter van Heeswijk, and Maximilian Schiffer
+
 
 ## Bibliography
 

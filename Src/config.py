@@ -108,6 +108,10 @@ class Config(object):
             obj = Utils.dynamic_load(path, tag, load_class=True)
             env = obj(smin=self.smin,smax=self.smax,n_items=args.n_actions,max_steps=args.max_steps,commonOrderCosts=args.commonOrderCosts,mappingType=self.mapping)
             return env, False, env.action_space.dtype == np.float32
+        elif tag[:7] == 'JobShop':
+            obj = Utils.dynamic_load(path, tag, load_class=True)
+            env = obj(n_machines=args.n_machines,n_jobs=args.n_jobs,max_steps=args.max_steps,mappingType=self.mapping,debug=False)
+            return env, False, env.action_space.dtype == np.float32
 
 if __name__ == '__main__':
     pass

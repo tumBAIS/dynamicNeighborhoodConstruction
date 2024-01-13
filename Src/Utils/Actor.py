@@ -31,17 +31,76 @@ class Actor(NeuralNet):
 
         print("Actor: ", temp)
 
-
 class Categorical(Actor):
-    def __init__(self, state_dim, config,action_space, action_dim=None,hidden1=64,hidden2=32):
+    def __init__(self, state_dim, config,action_space, action_dim=None):
         super(Categorical, self).__init__(state_dim, config)
 
         if action_dim is not None:
             self.action_dim = action_dim
 
-        self.fc1 = nn.Linear(state_dim, hidden1)
-        self.fc2 = nn.Linear(hidden1, hidden2)
-        self.fc3 = nn.Linear(hidden2, self.action_dim)
+        self.fc1 = nn.Linear(self.state_dim, self.action_dim)
+        self.action_space = action_space
+        # self.action_array = np.arange(self.action_dim)
+        self.init()
+
+
+    def forward(self, state):
+        x = self.fc1(state)
+        return x
+
+    def get_action(self, state, training):
+        x = self.forward(state)
+        dist = F.softmax(x, -1)
+        probs = dist.cpu().view(-1).data.numpy()
+        if training:
+            action_id = np.random.choice(self.action_dim, p=probs)
+            action = torch.tensor([self.action_space[action_id,:]])
+        else:
+            action_id = np.argmax(probs)
+            action = torch.tensor([self.action_space[action_id, :]])
+        return action, dist
+
+    def get_action_w_prob(self, state, explore=0):
+        x = self.forward(state)
+        dist = F.softmax(x, -1)
+
+        probs = dist.cpu().view(-1).data.numpy()
+        action = np.random.choice(self.action_dim, p=probs)
+
+        return action, dist, dist.data[0][action]
+
+    def get_prob(self, state, action):
+        x = self.forward(state)
+        dist = F.softmax(x, -1)
+        return dist.gather(1, action), dist
+
+    def get_prob_from_dist(self, dist, action):
+        return dist.gather(1, action)
+
+    def get_log_prob(self, state, action):
+        x = self.forward(state)
+        log_dist = F.log_softmax(x + 1e-5, -1)
+        tmp_AT = torch.tensor(self.action_space,dtype=torch.float32)
+        action = np.where(np.all(tmp_AT.numpy() == action.numpy()[0], axis=1))[0][0]
+        return  log_dist.gather(1,torch.tensor([[action]])), torch.exp(log_dist)
+
+    def get_log_prob_from_dist(self, dist, action):
+        return torch.log(dist.gather(dim=1, index=action) + 1e-5)
+
+    def get_entropy_from_dist(self, dist):
+        return - torch.sum(dist * torch.log(dist + 1e-5), dim=-1)
+
+class Categorical_deep(Actor):
+    def __init__(self, state_dim, config,action_space, action_dim=None):
+        super(Categorical_deep, self).__init__(state_dim, config)
+
+        if action_dim is not None:
+            self.action_dim = action_dim
+
+        hidden = self.config.hiddenActorLayerSize
+        self.fc1 = nn.Linear(state_dim, hidden)
+        self.fc2 = nn.Linear(hidden, hidden)
+        self.fc3 = nn.Linear(hidden, self.action_dim)
         self.relu = nn.ReLU()
         self.action_space = action_space
         self.init()
@@ -94,15 +153,20 @@ class Categorical(Actor):
     def get_log_prob_from_dist(self, dist, action):
         return torch.log(dist.gather(dim=1, index=action) + 1e-5)
 
+    def get_entropy_from_dist(self, dist):
+        return - torch.sum(dist * torch.log(dist + 1e-5), dim=-1)
+
 class Gaussian(Actor):
     def __init__(self, state_dim, action_dim, config):
         super(Gaussian, self).__init__(state_dim, config)
-
         # override super class variable
         self.action_dim = action_dim
         self.fc_mean = nn.Linear(state_dim, self.action_dim)
 
-        self.output_layer = torch.tanh
+        if config.actor_output_layer == 'sigmoid':
+            self.output_layer = torch.sigmoid
+        else:
+            self.output_layer = torch.tanh
 
         if self.config.gauss_variance > 0:
             self.forward = self.forward_wo_var
@@ -116,8 +180,8 @@ class Gaussian(Actor):
         return mean, var
 
     def forward_with_var(self, state):
-        mean = self.output_layer(self.fc_mean(state))
-        var  = F.sigmoid(self.fc_var(state)) + 1e-2
+        mean = self.output_layer(self.fc_mean(state))*self.config.actor_scaling_factor_mean
+        var  = (F.sigmoid(self.fc_var(state)) + 1e-2)*self.config.actor_scaling_factor_mean
         return mean, var
 
     def get_action(self, state, training):
@@ -126,7 +190,7 @@ class Gaussian(Actor):
         if training:
             action = dist.sample()
         else:
-            action = mean
+            action = mean.detach()
 
         return action, dist
 
@@ -144,6 +208,8 @@ class Gaussian(Actor):
         else:
             prod = torch.exp(dist.log_prob(action))
         return prod
+    def get_entropy_from_dist(self, dist):
+        return dist.entropy()
 
 
 class Gaussian_deep(Actor):
@@ -157,7 +223,10 @@ class Gaussian_deep(Actor):
         self.fc3 = nn.Linear(self.config.hiddenActorLayerSize, self.action_dim)
         self.relu = nn.ReLU()
 
-        self.output_layer = torch.tanh
+        if config.actor_output_layer == 'sigmoid':
+            self.output_layer = torch.sigmoid
+        else:
+            self.output_layer = torch.tanh
 
         if self.config.gauss_variance > 0:
             self.forward = self.forward_wo_var
@@ -195,7 +264,7 @@ class Gaussian_deep(Actor):
         var = self.fc5(var)
         var = self.relu(var)
         var = self.fc6(var)
-        var = F.sigmoid(var) + 1e-2
+        var = (F.sigmoid(var) + 1e-2)*self.config.actor_scaling_factor_mean
 
         return mean, var
 
@@ -223,4 +292,6 @@ class Gaussian_deep(Actor):
         else:
             prod = torch.exp(dist.log_prob(action))
         return prod
+    def get_entropy_from_dist(self, dist):
+        return dist.entropy()
 

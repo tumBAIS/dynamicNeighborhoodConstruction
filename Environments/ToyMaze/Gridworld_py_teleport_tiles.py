@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 import time
+import sys
 
 import numpy as np
 import matplotlib.pyplot  as plt
@@ -8,7 +9,7 @@ from matplotlib.patches import Rectangle, Circle, Arrow
 from matplotlib.ticker import NullLocator
 from Src.Utils.Utils import Space, binaryEncoding
 
-class Gridworld_py(object):
+class Gridworld_py_teleport_tiles(object):
     def __init__(self,
                  mappingType='knn_mapping',
                  n_actions=4,
@@ -33,12 +34,12 @@ class Gridworld_py(object):
             self.actionLiteral = True
 
         self.movement = self.get_movements(self.n_actions)
+
         if self.n_actions == 28 and self.actionLiteral:
             self.max_dist = 8.93217285994847
             self.action_space_matrix = np.zeros(0)
         else:
             self.motions,self.action_space_matrix = self.get_action_motions(self.n_actions)
-        # self.motions,self.action_space_matrix = self.get_action_motions(self.n_actions)
 
         self.wall = with_wall
         self.wall_width = 0.05
@@ -51,10 +52,11 @@ class Gridworld_py(object):
         self.movement_reward = 0  # 1
         self.randomness = 0.1
 
+        self.get_static_teleport_tiles()
+
         self.n_lidar = 0
         self.angles = np.linspace(0, 2 * np.pi, self.n_lidar + 1)[:-1]  # Get 10 lidar directions,(11th and 0th are same)
         self.lidar_angles = list(zip(np.cos(self.angles), np.sin(self.angles)))
-        self.static_obstacles = self.get_static_obstacles()
 
         # if debug:
         self.heatmap_scale = 99
@@ -67,61 +69,6 @@ class Gridworld_py(object):
 
     def get_embeddings(self):
         return self.motions.copy()
-
-    def render(self):
-        x, y = self.curr_pos
-
-        # ----------------- One Time Set-up --------------------------------
-        if not self.disp_flag:
-            self.disp_flag = True
-            # plt.axis('off')
-            self.currentAxis = plt.gca()
-            plt.figure(1, frameon=False)                            #Turns off the the boundary padding
-            self.currentAxis.xaxis.set_major_locator(NullLocator()) #Turns of ticks of x axis
-            self.currentAxis.yaxis.set_major_locator(NullLocator()) #Turns of ticks of y axis
-            plt.ion()                                               #To avoid display blockage
-
-            self.circle = Circle((x, y), 0.01, color='red')
-            for coords in self.static_obstacles:
-                x1, y1, x2, y2 = coords
-                w, h = x2-x1, y2-y1
-                self.currentAxis.add_patch(Rectangle((x1, y1), w, h, fill=True, color='gray'))
-            print("Init done")
-        # ----------------------------------------------------------------------
-
-        for key, val in self.dynamic_obs.items():
-            coords, cond = val
-            if cond:
-                x1, y1, x2, y2 = coords
-                w, h = x2 - x1, y2 - y1
-                self.objects[key] = Rectangle((x1, y1), w, h, fill=True, color='black')
-                self.currentAxis.add_patch(self.objects[key])
-
-
-        for key, val in self.reward_states.items():
-            coords, cond = val
-            if cond:
-                x1, y1, x2, y2 = coords
-                w, h = x2 - x1, y2 - y1
-                self.objects[key] = Rectangle((x1, y1), w, h, fill=True)
-                self.currentAxis.add_patch(self.objects[key])
-
-        if len(self.angles) > 0:
-            r = self.curr_state[-10:]
-            coords = zip(r * np.cos(self.angles), r * np.sin(self.angles))
-
-            for i, (w, h) in enumerate(coords):
-                self.objects[str(i)] = Arrow(x, y, w, h, width=0.01, fill=True, color='lightgreen')
-                self.currentAxis.add_patch(self.objects[str(i)])
-
-        self.objects['circle'] = Circle((x, y), 0.01, color='red')
-        self.currentAxis.add_patch(self.objects['circle'])
-
-        # remove all the dynamic objects
-        plt.pause(1e-7)
-        for _, item in self.objects.items():
-            item.remove()
-        self.objects = {}
 
     def set_rewards(self):
         # All rewards
@@ -139,8 +86,8 @@ class Gridworld_py(object):
         self.dynamic_obs = self.get_dynamic_obstacles()
         self.objects = {}
 
-        self.curr_pos = np.array([0.25, 0.1]) # np.array([0.1,0.35])  #
-        #
+        self.curr_pos = np.array([0.99, 0.01]) # np.array([0.1,0.35])  #
+
         if training:
             while True:
                 self.curr_pos[0] = np.random.uniform(0,1)
@@ -185,24 +132,25 @@ class Gridworld_py(object):
             tmp = np.linalg.norm(motions[idx], ord=2)
             if tmp > max_dist:
                 max_dist = tmp
-
         # Normalize to make maximium distance covered at a step be 1
         motions /= max_dist
         self.max_dist = max_dist
         return motions,action_space_matrix
+
     def new_pos_valid(self,new_pos,delta,reward,motion):
         # Check if hit obstacle
-        if self.check_hit_obstacles(new_pos):
-            # Negative reward in wall area but no constraint
-            if self.soft_constraint:
-                for region in self.static_obstacles:
-                    if self.in_region(new_pos, region):
-                        reward += self.collision_reward
-                self.curr_pos = new_pos
-                return reward,True
+        if self.check_hit_teleport_tiles(new_pos):
             # Negative reward in wall area with constraint
-            reward += self.collision_reward
-            return reward, False
+            dist = np.linalg.norm(delta)
+            reward += self.movement_reward * dist - 10 # small reward for moving
+            if dist >= self.wall_width:
+                print("ERROR: Step size bigger than wall width", new_pos, self.curr_pos, dist, delta, motion,
+                      self.step_unit)
+            self.curr_pos = np.array([0.99,0.01])
+            reward += self.get_goal_rewards(self.curr_pos)
+            # reward += self.open_gate_condition(self.curr_pos)
+            return reward,True
+
         # If not hit obstacle and not hit region limit, return True, else return False
         elif self.valid_pos(new_pos,check_wall=False):
             dist = np.linalg.norm(delta)
@@ -281,12 +229,11 @@ class Gridworld_py(object):
             if reward and self.in_region(pos, region):
                 self.reward_states[key] = (region, 0)  # remove reward once taken
                 if self.debug: print("Got reward {} in {} steps!! ".format(reward, self.steps_taken))
-
                 return reward
         return 0
 
     def get_reward_states(self):
-        self.G1 = (0.25, 0.45, 0.30, 0.5)
+        self.G1 = (0, 0.45, 0.05, 0.5)
         self.G2 = (0.70, 0.85, 0.75, 0.90)
         return {'G1': (self.G1, self.G1_reward),
                 'G2': (self.G2, self.G2_reward)}
@@ -300,45 +247,22 @@ class Gridworld_py(object):
         # self.Gate = (0.15,0.25,0.35,0.3)
         # return {'Gate': (self.Gate, self.Gate_reward)}
 
-    def get_static_obstacles(self):
-        """
-        Each obstacle is a solid bar, represented by (x,y,x2,y2)
-        representing bottom left and top right corners,
-        in percentage relative to board size
+    def get_static_teleport_tiles(self):
+        self.T1 = (0.4, 0.4, 0.6, 0.6)
 
-        :return: list of objects
-        """
-        self.soft_constraint = False
-        if self.wall == False and self.constraint != 'soft':
-            self.O1 = (0,0,0,0)
-            self.O2 = (0,0,0,0)
-        elif self.constraint == 'soft':
-            self.soft_constraint = True
-            self.O1 = (0, 0.25, 0 + self.wall_width + 0.45, 0.25 + self.wall_width)
-            self.O2 = (0.5, 0.25, 0.5 + self.wall_width, 0.25 + self.wall_width + 0.5)
-        else:
-            self.O1 = (0, 0.25, 0 + self.wall_width + 0.45, 0.25 + self.wall_width)
-            self.O2 = (0.5, 0.25, 0.5 + self.wall_width, 0.25 + self.wall_width + 0.5)
-        obstacles = [self.O1, self.O2]
-        return obstacles
 
-    def check_hit_obstacles(self,pos):
+    def check_hit_teleport_tiles(self,pos):
         flag = False
         # Check collision with static obstacles
-        for region in self.static_obstacles:
-            if self.in_region(pos, region):
-                flag = True
-                break
+        if self.in_region(pos,self.T1):
+            flag = True
         return flag
+
     def valid_pos(self, pos,check_wall=True):
         flag = True
         # Check boundary conditions
         if not self.in_region(pos, [0,0,1,1]):
             flag = False
-
-        # Check walls
-        if check_wall:
-            flag = not self.check_hit_obstacles(pos)
 
         # Check collision with dynamic obstacles
         for key, val in self.dynamic_obs.items():
@@ -363,21 +287,3 @@ class Gridworld_py(object):
             return True
         else:
             return False
-
-
-if __name__=="__main__":
-    # Random Agent
-    rewards_list = []
-    env = Gridworld_py(debug=True, n_actions=8, action_type='discrete')
-    for i in range(50):
-        rewards = 0
-        done = False
-        env.reset()
-        while not done:
-            # env.render()
-            action = np.random.randint(2**env.n_actions)
-            next_state, r, done, _ = env.step(action)
-            rewards += r
-        rewards_list.append(rewards)
-
-    print("Average random rewards: ", np.mean(rewards_list), np.sum(rewards_list))

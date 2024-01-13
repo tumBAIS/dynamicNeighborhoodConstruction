@@ -137,7 +137,7 @@ class JointReplenishment_py(object):
 
     # Normalize such that it works wel with subsequent steps
     def make_state(self):
-        state = self.cur_inv/self.obs_space_span # -self.avg_no_items)/self.avg_no_items
+        state = self.cur_inv#/self.obs_space_span # -self.avg_no_items)/self.avg_no_items
         return state
 
 
@@ -151,7 +151,7 @@ class JointReplenishment_py(object):
          shape = ((self.s_max+1)**n_actions, n_actions)
          levels = np.zeros(shape)
          for idx in range(shape[0]):
-             action = binaryEncoding(idx, n_actions,self.s_max+1)
+             action = binaryEncoding(idx, n_actions,self.s_max) # removed +1
              levels[idx] = action
 
          return levels,levels

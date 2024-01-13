@@ -3,6 +3,8 @@ import Src.Utils.Utils as Utils
 from Src.parser import Parser
 from Src.config import Config
 from time import time
+import torch
+# import time
 
 
 
@@ -34,7 +36,11 @@ class Solver:
             done = False
             while not done:
                 t1 = time()
-                action, dist = self.model.get_action(state,training=True)
+                if episode == 0 and step == 0:
+                    self.model.weights_changed = True
+                else:
+                    self.model.weights_changed = False
+                action, dist = self.model.get_action(state,training=False)
                 new_state, reward, done, info = self.env.step(action,training=False)
                 state = new_state
                 trajectory.append((action, reward))
@@ -64,6 +70,7 @@ class Solver:
         steps = 0
         t0 = time()
         t_init = time()
+        self.episode = 0
         for episode in range(start_ep, self.config.max_episodes):
 
             episode_loss_actor = []
@@ -75,10 +82,9 @@ class Solver:
 
             step, total_r = 0, 0
             done = False
-
-
-
+            t1 = time()
             while not done:
+                # t1 = time()
                 action, a_hat = self.model.get_action(state, training=True)
                 new_state, reward, done, info = self.env.step(action=action)
                 loss_actor,loss_critic=self.model.update(state, action, a_hat, reward, new_state, done)
@@ -89,6 +95,7 @@ class Solver:
                 step += 1
                 if step > self.config.max_steps:
                     break
+            self.episode += 1
 
             # Track actor and critic loss
             total_loss_actor = total_loss_actor*0.99+0.01*np.average(episode_loss_actor)
@@ -107,9 +114,10 @@ class Solver:
                 run_time.append((time()-t_init))
                 print('time required for '+str(checkpoint)+' :' +str(time()-t0))
                 if self.config.env_name == 'Recommender_py':
-                    test_reward,step_time,_=self.eval(500)
+                    test_reward,step_time,_=self.eval(10)
                 else:
                     test_reward, step_time, _ = self.eval(10)
+                self.model.save()
                 avg_test_reward = np.average(test_reward)
                 std_test_reward = np.std(test_reward)
                 avg_step_time.append(np.average(step_time))

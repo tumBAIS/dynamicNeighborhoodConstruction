@@ -144,12 +144,6 @@ def binaryEncoding(num, size,level=1):
         i -= 1
     return binary
 
-# def stablesoftmax(x):
-#     """Compute the softmax of vector x in a numerically stable way."""
-#     shiftx = x - np.max(x)
-#     exps = np.exp(shiftx)
-#     return exps / np.sum(exps)
-
 
 
 def pairwise_distances(x, y):
@@ -223,7 +217,7 @@ def dynamic_load(dir, name, load_class=False):
 
         if len(abs_path) == 0:
             abs_path = search(dir, name).split('\\')[1:]
-        pos = abs_path.index('dynamicNeighborhoodConstruction')
+        pos = abs_path.index('iclr_finalsubmission')
 
         module_path = '.'.join([str(item) for item in abs_path[pos + 1:]])
         print("Module path: ", module_path, name)
@@ -262,16 +256,16 @@ def remove_directory(dir_path):
     shutil.rmtree(dir_path, ignore_errors=True)
 
 
-def clip_norm(params, max_norm=1):
-    # return params
-    norm_param = []
-    for param in params:
-        norm = np.linalg.norm(param, 2)
-        if norm > max_norm:
-            norm_param.append(param/norm * max_norm)
-        else:
-            norm_param.append(param)
-    return norm_param
+# def clip_norm(params, max_norm=1):
+#     # return params
+#     norm_param = []
+#     for param in params:
+#         norm = np.linalg.norm(param, 2)
+#         if norm > max_norm:
+#             norm_param.append(param/norm * max_norm)
+#         else:
+#             norm_param.append(param)
+#     return norm_param
 
 
 

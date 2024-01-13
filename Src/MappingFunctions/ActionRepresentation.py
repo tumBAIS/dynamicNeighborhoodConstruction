@@ -63,7 +63,7 @@ class Action_representation(NeuralNet):
 
         return similarity
 
-    def get_best_match(self, action,state,critic):
+    def get_best_match(self, action,state,critic,weights_changed=True,training=True):
         similarity = self.get_match_scores(action)
         val, pos = torch.max(similarity, dim=1)
         return pos.cpu().item() #data.numpy()[0]
@@ -149,7 +149,7 @@ class Action_representation_deep(NeuralNet):
 
         return similarity
 
-    def get_best_match(self, action,state,critic):
+    def get_best_match(self, action,state,critic,weights_changed=True,training=True):
         similarity = self.get_match_scores(action)
         val, pos = torch.max(similarity, dim=1)
         return pos.cpu().item() #data.numpy()[0]
@@ -206,7 +206,7 @@ class No_Action_representation(NeuralNet):
         self.norm_const = np.log(self.action_dim)
         self.reduced_action_dim = action_dim
 
-    def get_best_match(self, action,state,critic):
+    def get_best_match(self, action,state,critic,weights_changed=True,training=True):
         action = np.where(np.all(self.action_space==action.numpy()[0],axis=1))[0][0]
         return action
 

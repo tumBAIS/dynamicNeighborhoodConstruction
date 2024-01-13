@@ -2,6 +2,7 @@ import numpy as np
 import torch
 from torch import tensor, float32, long
 import torch.nn.functional as F
+import scipy
 from Src.Utils.Utils import MemoryBuffer, Trajectory
 from Src.RL_Algorithms.Agent import Agent
 from Src.Utils import Basis, Actor, Critic
@@ -17,8 +18,13 @@ class QAC_C2DMapping(Agent):
         # Obtain state features
         self.state_features = Basis.get_Basis(config=config)
 
+        self.config = config
+
         # Initialize mapping function
         self.action_space_matrix = config.env.action_space_matrix
+
+        # Initialize critic
+        self.critic = Critic.Qval(state_dim=self.state_features.feature_dim,action_dim=self.config.env.n_actions, config=config)
         if config.mapping == 'learned_mapping':
             if not config.deepActionRep:
                 self.mapping_fct = ActionRepresentation.Action_representation(state_dim=self.state_features.feature_dim,
@@ -28,16 +34,13 @@ class QAC_C2DMapping(Agent):
                                                                              action_dim=self.action_dim, config=config)
         elif config.mapping == 'knn_mapping':
             self.mapping_fct = Knn.Knn(state_features=self.state_features,action_dim=self.action_dim,
-                                      config=config,action_space_matrix=self.action_space_matrix)
-        elif config.mapping == 'minmax_mapping':
-            self.mapping_fct = Minmax.Minmax(action_dim=self.action_dim,
-                                      config=config,action_space_matrix=self.action_space_matrix)
+                                      config=config,action_space_matrix=self.action_space_matrix,critic=self.critic)
         elif config.mapping == 'no_mapping':
             self.mapping_fct = ActionRepresentation.No_Action_representation(state_dim=self.state_features.feature_dim,
                                                                          action_dim=self.action_dim, config=config,action_space=self.action_space_matrix)
         elif config.mapping == 'dnc_mapping':
             self.mapping_fct = Dnc.DNC(state_features=self.state_features,action_dim=self.action_dim,
-                                      config=config,action_space_matrix=self.action_space_matrix)
+                                      config=config,action_space_matrix=self.action_space_matrix,critic=self.critic)
         else:
             raise Exception("Invalid mapping specified")
 
@@ -56,8 +59,6 @@ class QAC_C2DMapping(Agent):
             self.action_space_matrix_size = self.action_space_matrix.shape[0]
             adim = 1
 
-        # Initialize critic
-        self.critic = Critic.Qval(state_dim=self.state_features.feature_dim,action_dim=self.config.env.n_actions, config=config)
 
         # Initialize actor: If VAC, use categorical, if not use Gaussian policy
         if config.mapping != 'no_mapping':
@@ -66,7 +67,11 @@ class QAC_C2DMapping(Agent):
             else:
                 self.actor = Actor.Gaussian_deep(action_dim=self.mapping_fct.reduced_action_dim,state_dim=self.state_features.feature_dim, config=config)
         else:
-            self.actor = Actor.Categorical(action_dim=self.action_space_matrix_size,state_dim=self.state_features.feature_dim, config=config,action_space=self.action_space_matrix)
+            if self.config.env_name == 'Gridworld_py' or config.deepActor == 0:
+                self.actor = Actor.Categorical(action_dim=self.action_space_matrix_size,state_dim=self.state_features.feature_dim, config=config,action_space=self.action_space_matrix)
+            else:
+                self.actor = Actor.Categorical_deep(action_dim=self.action_space_matrix_size,state_dim=self.state_features.feature_dim, config=config,action_space=self.action_space_matrix)
+
 
         # Mapping specific requirements
         if (config.mapping == 'dnc_mapping' or config.mapping == 'minmax_mapping') and config.env_name=='Recommender_py':
@@ -91,11 +96,18 @@ class QAC_C2DMapping(Agent):
         # Define the action space matrix as tensor
         self.action_space_matrix = torch.tensor(self.action_space_matrix,dtype=torch.float32)
 
+        # Underlying DRL agent
+        if self.config.rl_baseline == 'ppo':
+            self.optimize =self.PPO_optimize
+        elif self.config.rl_baseline == 'qac':
+            self.optimize = self.QAC_optimize
+
         # When requiring an action space matrix, define action id to action transformation, not required when using DNC/MinMax
         if not self.config.env.actionLiteral:
             self.action_trafo = self.action_id_to_tensor
         else:
             self.action_trafo = self.action_to_tensor # Dummy function
+        self.weights_changed = True
 
 
 
@@ -107,8 +119,8 @@ class QAC_C2DMapping(Agent):
         else:
             state = tensor(state, dtype=float32, requires_grad=False)
             state = self.state_features.forward( state.view(1, -1))
-            a_hat, _ = self.actor.get_action(state, training)
-            action = self.mapping_fct.get_best_match(a_hat,state,self.critic)
+            a_hat, _ = self.actor.get_action(state,training=True)
+            action = self.mapping_fct.get_best_match(a_hat,state,weights_changed=self.weights_changed,critic = self.critic,training=training)
 
             a_hat = a_hat.cpu().view(-1).data.numpy()
 
@@ -122,7 +134,10 @@ class QAC_C2DMapping(Agent):
             self.trajectory.add(s1, a1, a_hat_1, r1, s2, int(done != 1))
             if self.trajectory.size >= self.config.batch_size or done:
                 loss_actor,loss_critic = self.optimize()
+                self.weights_changed = True
                 self.trajectory.reset()
+            else:
+                self.weights_changed = False
         else:
             if self.memory.length >= self.config.buffer_size:
                 self.initial_phase_training(max_epochs=self.config.initial_phase_epochs)
@@ -135,17 +150,20 @@ class QAC_C2DMapping(Agent):
         action2= self.action_space_matrix[a2].view(1, -1)
         return self.action_space_matrix[id].view(1,-1),action2
 
-    def optimize(self):
-        s1, a1, a_hat_1, r1, s2, not_absorbing = self.trajectory.get_all()
 
-        a2, a_hat_2 = self.get_action(s2,training=True)
+    def QAC_optimize(self):
+        s1, a1, a_hat_1, r1, s2, not_absorbing = self.trajectory.get_current_transitions()
+
+        a2, a_hat_2 = self.get_action(s2,training=True) # training=True
         s1 = self.state_features.forward(s1)
         s2 = self.state_features.forward(s2)
 
         action1,action2 = self.action_trafo(a1,a2)
 
-
         # Define critic loss
+        action2 = torch.tensor(action2/(self.config.env.action_space.high - self.config.env.action_space.low),dtype=torch.float32)
+        action1 = torch.tensor(action1/(self.config.env.action_space.high - self.config.env.action_space.low),dtype=torch.float32)
+
         next_val = self.critic.forward(s2,action2).detach()
         val_exp  = r1 + self.config.gamma * next_val * not_absorbing
         val_pred = self.critic.forward(s1,action1)
@@ -171,6 +189,59 @@ class QAC_C2DMapping(Agent):
         return loss_actor.cpu().data.numpy(),loss_critic.cpu().data.numpy()
 
 
+    #### PPO
+    # Discounted cumulative sums of vectors for computing sum of discounted rewards and advantage estimates
+    def discounted_cumulative_sums(self,x, discount):
+        return scipy.signal.lfilter([1], [1, float(-discount)], x[::-1], axis=0)[::-1]
+
+    def PPO_optimize(self):
+        if self.trajectory.size > 1:
+            self.calculate_trajectory_information()
+            for i in range(self.config.update_epochs):
+
+                ## PPO Clipping
+                logprobs,distribution = self.actor.get_log_prob(self.state_buffer[:-1, ], self.a_hat_buffer[:-1,])
+                ratio = torch.exp(logprobs.sum(axis=1)-self.logprobas)
+                clip_advantage = torch.where(self.advantages[:,0] > 0, (1 + self.config.clipping_factor) * self.advantages[:,0], (1 - self.config.clipping_factor) * self.advantages[:,0]) # Apply clipping
+                loss_actor = -torch.mean(torch.minimum(ratio * self.advantages[:,0],clip_advantage))
+                predictions = self.critic.forward(self.state_buffer, self.action_buffer)
+                loss_critic = F.huber_loss(self.n_step_return_buffer,predictions[:-1])
+                loss = loss_actor + loss_critic
+                self.step(loss, clip_norm=1)
+
+            return loss_actor.cpu().data.numpy(),loss_critic.cpu().data.numpy()
+        else:
+            loss_actor,loss_critic = self.QAC_optimize()
+            return loss_actor,loss_critic
+
+    def calculate_trajectory_information(self):
+        self.state_buffer, self.action_buffer, self.a_hat_buffer, reward_buffer, next_state_buffer, done_buffer = self.trajectory.get_current_transitions()
+        self.state_buffer = self.state_features.forward(self.state_buffer)
+        if len(self.action_space_matrix) != 0:
+            self.action_buffer = self.action_space_matrix[self.action_buffer][:,0]
+        self.action_buffer = torch.tensor(self.action_buffer/(self.config.env.action_space.high - self.config.env.action_space.low),dtype=torch.float32)
+        value_buffer = self.critic.forward(self.state_buffer, self.action_buffer)
+
+        ## δ = r(s_t,a_t)+γV(s_{t+1})-V(s_t)
+        self.targets = (reward_buffer[:-1] + self.config.gamma * value_buffer[1:] * done_buffer[1:]).detach()
+        self.predictions = value_buffer[:-1]
+
+
+        deltas = (self.targets-self.predictions).detach().numpy()
+
+        # A(s_t,a_t) = Q(s_t,a_t)-V(s_t) = 𝔼[r(s_t,a_t)+γV(s_{t+1})|s_t,a] - A(s_t) ~ G^λ_t(s_t,a_t)-V̂(s_t) ~ Sum_{k=t}^{T} (γλ)^{k-t} δ_k, if T big
+        # GAE
+        self.advantages = torch.tensor(self.discounted_cumulative_sums(deltas, self.config.gamma * self.config.td_lambda).copy())
+
+        # Calculate total return (i.e., sum of discounted rewards) as target for value function update
+        episode_length = len(reward_buffer)
+        end_of_episode_vf = np.ones(episode_length-1)
+        for i in range(episode_length-1):
+            end_of_episode_vf[i] = end_of_episode_vf[i]*self.config.gamma**(episode_length-1-i)
+        end_of_episode_vf = value_buffer[-1].detach().numpy() * done_buffer[-1].detach().numpy() * end_of_episode_vf
+        # G^n(s_t, a_t) = sum of disc rewards + value function of final next state
+        self.n_step_return_buffer = torch.tensor(self.discounted_cumulative_sums(reward_buffer.detach().numpy()[:-1], self.config.gamma).copy()[:,0]+end_of_episode_vf,dtype=torch.float32).view(-1,1)
+        self.logprobas = self.actor.get_log_prob(self.state_buffer[:-1,],self.a_hat_buffer[:-1,])[0].sum(axis=1).detach()
 
     def self_supervised_update(self, s1, a1, s2, reg=1):
         self.clear_gradients()  # clear all the gradients from last run

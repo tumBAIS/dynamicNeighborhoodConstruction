@@ -11,7 +11,7 @@ class Parser(object):
 
 
         # General parameters
-        parser.add_argument("--save_count", default=10, help="Number of checkpoints for saving results and model", type=int)
+        parser.add_argument("--save_count", default=1000, help="Number of checkpoints for saving results and model", type=int)
         parser.add_argument("--optim", default='sgd', help="Optimizer type", choices=['adam', 'sgd', 'rmsprop'])
         parser.add_argument("--log_output", default='term_file', help="Log all the print outputs",choices=['term_file', 'term', 'file'])
         parser.add_argument("--debug", default=True, type=self.str2bool, help="Debug mode on/off")
@@ -24,6 +24,8 @@ class Parser(object):
         parser.add_argument("--folder_suffix", default='default', help="folder name suffix")
         parser.add_argument("--experiment", default='run', help="Name of the experiment")
 
+        # Which RL baselien to use
+        parser.add_argument("--rl_baseline", default="qac", help="Type of rl baseline",choices=["ppo", "qac"])  # minmax achieved by using dnc_mapping and setting --cooling = 0 below
         # Which mapping to use
         parser.add_argument("--mapping",default="dnc_mapping",help = "Type of mapping function", choices= ["no_mapping","knn_mapping","dnc_mapping","learned_mapping"]) # minmax achieved by using dnc_mapping and setting --cooling = 0 below
 
@@ -36,6 +38,7 @@ class Parser(object):
 
         # General settings for QAC algorithm
         self.QAC_parameters(parser)
+        self.PPO_parameters(parser)
 
         self.parser = parser
 
@@ -54,9 +57,9 @@ class Parser(object):
 
     def environment_parameters(self, parser):
         parser.add_argument("--algo_name", default='QAC_C2DMapping', help="RL algorithm")
-        parser.add_argument("--env_name", default='Gridworld_py', help="Environment to run the code", choices=["Gridworld_py","Recommender_py","JointReplenishment_py"])
-        parser.add_argument("--n_actions", default=12, help="size of the action vector", type=int)
-        parser.add_argument("--max_episodes", default=int(100), help="maximum number of episodes", type=int)
+        parser.add_argument("--env_name", default='JobShop_py', help="Environment to run the code", choices=["Gridworld_py","Gridworld_py_teleport_tiles","Recommender_py","JointReplenishment_py","JobShop_py"])
+        parser.add_argument("--n_actions", default=5, help="size of the action vector", type=int)
+        parser.add_argument("--max_episodes", default=int(70000), help="maximum number of episodes", type=int)
         parser.add_argument("--max_steps", default=150, help="maximum steps per episode", type=int)
 
         # Gridworld specific arguments
@@ -64,12 +67,16 @@ class Parser(object):
         parser.add_argument("--collision_rewards", default=0, help="degree of collision rewards", type=float)
         parser.add_argument("--constraint", default='hard', help="type of constraint")
 
+        parser.add_argument("--smin", default=0, help="minimum integer value", type=int)
+        parser.add_argument("--smax", default=1, help="maximum integer value", type=int) # 66 for inventory
+
         # Joint replenishment specific
-        parser.add_argument("--smin", default=0, help="minimum order level", type=int)
-        parser.add_argument("--smax", default=66, help="max order level", type=int)
         parser.add_argument("--commonOrderCosts", default=75, help="common order costs for the inventory env", type=int)
         parser.add_argument("--actionLiteral", default=1, help="mapping return literal action instead of label", type=int)
 
+        #Jobshop
+        parser.add_argument("--n_machines", default=5, help="number of machines for the jobshop env", type=int)
+        parser.add_argument("--n_jobs", default=100, help="number of machines for the jobshop env", type=int)
 
     def LAR_parameters(self, parser):
         parser.add_argument("--true_embeddings", default=False, help="Use ground truth embeddings or not?", type=self.str2bool)
@@ -80,8 +87,10 @@ class Parser(object):
         parser.add_argument("--reduced_action_dim",default=2, help="dimensions of action embeddings", type=int)
         parser.add_argument("--load_embed", default=False, type=self.str2bool, help="Retrain flag")
         parser.add_argument("--deepActionRep", default=True, help="use deep NN for learning action reps or not",type=self.str2bool)
-        parser.add_argument("--sup_batch_size", default=64, help="(64)Supervised learning Batch size", type=int)
-        parser.add_argument("--initial_phase_epochs", default=4, help="maximum number of episodes (500)", type=int)  ##### CHANGED FROM BASE SETTING (500)
+        parser.add_argument("--sup_batch_size", default=64, help="(64) Supervised learning Batch size", type=int)
+        parser.add_argument("--initial_phase_epochs", default=500, help="maximum number of episodes (500)", type=int)  ##### CHANGED FROM BASE SETTING (500)
+        parser.add_argument("--buffer_size", default=int(6e5), help="Size of memory buffer (6e5)", type=int)
+
 
     def KNN_parameters(self,parser):
         # KNN specific
@@ -95,30 +104,42 @@ class Parser(object):
         # Neighborhood exploration method, only a_clip and
         parser.add_argument("--a_clip",default=1, help="clipping for minmax", type=float)
         parser.add_argument("--clipped_decimals", default=0, type=int,help="How to clip protoactions for dnc and minmax")
-        parser.add_argument("--maximum_greedy_search_steps", default=0, type=int,help="amplitude of perturbation")
-        parser.add_argument("--perturb_scaler", default=1, type=float,help="decimals with which we perturb")
-        parser.add_argument("--perturbation_range", default=5, type=int, help="decimals with which we perturb")
+        parser.add_argument("--SA_search_steps", default=1, type=int,help="regulates the number of SA search steps") # 0 --> minmax
+        parser.add_argument("--neighbor_picking", default='SA', type=str, help="greedy or SA") # greedy --> dnc wo sa
+        parser.add_argument("--perturb_scaler", default=1, type=float,help="amplitude with which we perturb")
+        parser.add_argument("--perturbation_range", default=10, type=int, help="number of neighbors = perturbation_range*action_vector_dim*2")
+        parser.add_argument("--neighborhood_query", default='dnc', type=str, help="dnc, math_programming, hybrid") # math_programming
+        parser.add_argument("--max_hamming_distance", default=1, type=int, help="maximum hamming distance between base action and neighbors")
+
+        # MathProg
+        parser.add_argument("--bigM", default=10000, type=int,help="should be higher than max value, Q values can reach")
 
         # Sim Annealing
-        parser.add_argument("--cooling",default=0,type=float,help="the speed of cooling for neighborhood construct. mapping")
+        parser.add_argument("--cooling",default=0.1,type=float,help="the speed of cooling for neighborhood construct. mapping")
         parser.add_argument("--initialAcceptance", default=0.9, type=float,help="the speed of cooling for neighborhood construct. mapping")
         parser.add_argument("--acceptanceCooling", default=0.225, type=float,help="the speed of cooling for neighborhood construct. mapping")
+
 
     def QAC_parameters(self, parser):
         parser.add_argument("--gamma", default=0.999, help="Discounting factor", type=float)
         parser.add_argument("--actor_lr", default=1e-2, help="(1e-2) Learning rate of actor", type=float)
         parser.add_argument("--critic_lr", default=1e-2, help="(1e-2) Learning rate of critic/baseline", type=float)
         parser.add_argument("--state_lr", default=1e-3, help="Learning rate of state features", type=float)
-        parser.add_argument("--gauss_variance", default=0.5, help="Variance for gaussian policy", type=float) # 1 original setting
+        parser.add_argument("--gauss_variance", default=1, help="Variance for gaussian policy", type=float) # 1 original setting
 
         parser.add_argument("--hiddenLayerSize", default=32, help="size of hiddenlayer", type=int)
-        parser.add_argument("--hiddenActorLayerSize", default=128, help="size of hiddenlayer", type=int)
+        parser.add_argument("--hiddenActorLayerSize", default=16, help="size of hiddenlayer", type=int)
         parser.add_argument("--deepActor", default=False, help="if we want a deep actor", type=self.str2bool)
 
         parser.add_argument("--actor_scaling_factor_mean", default=1, help="scale output of actor mean by x", type=float)
 
-        parser.add_argument("--fourier_coupled", default=True, help="Coupled or uncoupled fourier basis", type=self.str2bool)
+        parser.add_argument("--fourier_coupled", default=False, help="Coupled or uncoupled fourier basis", type=self.str2bool)
         parser.add_argument("--fourier_order", default=3, help="Order of fourier basis, " + "(if > 0, it overrides neural nets)", type=int)
 
-        parser.add_argument("--buffer_size", default=int(100), help="Size of memory buffer (6e5)", type=int)
+        parser.add_argument("--actor_output_layer",default='tanh',help="tanh or sigmoid",type = str)
+
+    def PPO_parameters(self,parser):
         parser.add_argument("--batch_size", default=1, help="Batch size", type=int)
+        parser.add_argument("--clipping_factor",default=0.2, help = "PPO clipping factor",type = float)
+        parser.add_argument("--td_lambda", default=0.95, help="lambda factor for calculating advantages", type=float)
+        parser.add_argument("--update_epochs", default=15,help="number of epochs with which we perform policy updates in PPO", type=int)
