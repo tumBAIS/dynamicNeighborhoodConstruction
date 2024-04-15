@@ -1,6 +1,6 @@
 # Dynamic Neighborhood Construction for Structured Large Discrete Action Spaces
 
-This project contains code for the paper titled "Dynamic Neighborhood Construction for Structured Large Discrete Action Spaces" by Fabian Akkerman, Julius Luy, Wouter van Heeswijk, and Maximilian Schiffer, see: https://arxiv.org/abs/2305.19891.
+This project contains code for the paper titled "Dynamic Neighborhood Construction for Structured Large Discrete Action Spaces" by Fabian Akkerman, Julius Luy, Wouter van Heeswijk, and Maximilian Schiffer, accepted at the Twelfth International Conference on Learning Representations (ICLR 2024) see: https://openreview.net/pdf?id=80wh3jjCZf.
 
 
 ## Environment
